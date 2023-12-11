@@ -1,6 +1,6 @@
 import sys
 
-from itertools import groupby
+from itertools import groupby, combinations
 
 
 class Range:
@@ -12,6 +12,15 @@ class Range:
         self.start = start
         self.range = range
         self.end = self.start + self.range
+
+    def __lt__(self, other):
+        return self.start < other.start
+
+    def __eq__(self, other):
+        return self.start == other.start and self.range == other.range
+
+    def __hash__(self):
+        return hash(str(self.start) + str(self.range))
 
 
 class Mapping:
@@ -58,59 +67,63 @@ class Mappings:
                     self.mapping_dict["to_location"].extend(group_to_mapping(group))
 
 
-def map_individual(input: Range, mappings: list[Mapping]) -> list[tuple[Mapping, Range]]:
-    l: list[tuple[Mapping, Range]] = []
-    x = input
+def map(inputs: list[Range], mappings: list[Mapping]) -> list[Range]:
+    output: list[Range] = []
+    tmp: list[Range] = []
+    deletes: list[Range] = []
     for mapping in mappings:
-        # no overlap -> range stays the same -> 1 entry
-        if mapping.src.start >= x.end or mapping.src.end <= x.start:
-            l.append((mapping, x))
-            continue
-        # fully in source range -> range fully mapped -> 1 entry
-        if mapping.src.start <= x.start and mapping.src.end >= x.end:
-            # get offset and return destination
-            offset = x.start - mapping.src.start
-            l.append((mapping, Range(mapping.dest.start + offset, x.range)))
-            continue
-        # lower start and higher end than source -> 3 entries
-        if mapping.src.start >= x.start and mapping.src.end <= x.end:
-            # complete desitination
-            l.append((mapping, Range(mapping.dest.start, mapping.dest.range)))
-            # below source
-            l.append((mapping, Range(x.start, mapping.src.start - x.start)))
-            # above source
-            l.append((mapping, Range(mapping.src.end, x.end - mapping.src.end)))
-            continue
-        # lower start than source -> 2 entries
-        if mapping.src.start < x.end and mapping.src.start >= x.start and mapping.src.end >= x.end:
-            # below source
-            l.append((mapping, Range(x.start, mapping.src.start - x.start)))
-            # calcaulated destination
-            offset = x.end - mapping.src.start
-            l.append((mapping, Range(mapping.dest.start, offset)))
-            continue
-        # higher end than source -> 2 entries
-        if mapping.src.end > x.start and mapping.src.start <= x.start and mapping.src.end <= x.end:
-            # above source
-            l.append((mapping, Range(mapping.src.end, x.end - mapping.src.end)))
-            # calucalated destination
-            offset = x.start - mapping.src.start
-            l.append((mapping, Range(mapping.dest.start + offset, offset)))
-            continue
-    return l
+        tmp = []
+        for input in inputs:
+            # no overlap -> range stays the same -> 1 entry
+            if mapping.src.start >= input.end or mapping.src.end <= input.start:
+                # tmp.append(input)
+                pass
+            # fully in source range -> range fully mapped -> 1 entry
+            if mapping.src.start <= input.start and mapping.src.end >= input.end:
+                # get offset and return destination
+                offset = input.start - mapping.src.start
+                output.append(Range(mapping.dest.start + offset, input.range))
+                deletes.append(input)
+            # lower start and higher end than source -> 3 entries
+            if mapping.src.start >= input.start and mapping.src.end <= input.end:
+                # complete desitination
+                output.append(Range(mapping.dest.start, mapping.dest.range))
+                # below source
+                tmp.append(Range(input.start, mapping.src.start - input.start))
+                # above source
+                tmp.append(Range(mapping.src.end, input.end - mapping.src.end))
+                deletes.append(input)
+            # lower start than source -> 2 entries
+            if mapping.src.start < input.end and mapping.src.start >= input.start and mapping.src.end >= input.end:
+                # below source
+                tmp.append(Range(input.start, mapping.src.start - input.start))
+                # calcaulated destination
+                offset = input.end - mapping.src.start
+                output.append(Range(mapping.dest.start, offset))
+                deletes.append(input)
+            # higher end than source -> 2 entries
+            if mapping.src.end > input.start and mapping.src.start <= input.start and mapping.src.end <= input.end:
+                # above source
+                tmp.append(Range(mapping.src.end, input.end - mapping.src.end))
+                # calucalated destination
+                offset = input.start - mapping.src.start
+                output.append(Range(mapping.dest.start + offset, offset))
+                deletes.append(input)
+            # inputs.remove(input)
+        inputs.extend(tmp)
+    for d in deletes:
+        try:
+            inputs.remove(d)
+        except ValueError:
+            pass
 
-
-def map(input: list[Range], mappings: list[Mapping]) -> list[Range]:
-    tmp: list[tuple[Mapping, Range]] = []
-
-    for i in input:
-        tmp.extend(map_individual(i, mappings))
-
-    return []
+    output.extend(inputs)
+    output = deduplicate_ranges(output)
+    return output
 
 
 def read_lines() -> list[str]:
-    with open("05/input_example", "r") as f:
+    with open("05/input", "r") as f:
         lines = f.readlines()
         lines = [line.strip() for line in lines]
     return lines
@@ -129,29 +142,47 @@ def group_to_mapping(group: list[str]) -> list[Mapping]:
     return l
 
 
+def deduplicate_ranges(ranges: list[Range]) -> list[Range]:
+    output: list[Range] = ranges.copy()
+    for r1, r2 in combinations(ranges, 2):
+        if r1.start >= r2.start and r1.end <= r2.end:
+            try:
+                output.remove(r1)
+            except ValueError:
+                pass
+        if r2.start >= r1.start and r2.end <= r1.end:
+            try:
+                output.remove(r2)
+            except ValueError:
+                pass
+
+    return list(set(output))
+
+
 def part2():
     m = Mappings(group_mappings())
     result = sys.maxsize
-    soil = []
-    soil.extend(map(m.seeds, m.mapping_dict["to_soil"]))
-    fertilizer = []
-    for x in m.mapping_dict["to_fertilizer"]:
-        fertilizer.extend(map(soil, x))
-    water = []
-    for x in m.mapping_dict["to_water"]:
-        water.extend(map(fertilizer, x))
-    light = []
-    for x in m.mapping_dict["to_light"]:
-        light.extend(map(water, x))
-    temperature = []
-    for x in m.mapping_dict["to_temperature"]:
-        temperature.extend(map(light, x))
-    humidity = []
-    for x in m.mapping_dict["to_humidity"]:
-        humidity.extend(map(temperature, x))
-    location: list[Range] = []
-    for x in m.mapping_dict["to_location"]:
-        location.extend(map(humidity, x))
+    soil = map(m.seeds.copy(), m.mapping_dict["to_soil"])
+
+    # soil = deduplicate_ranges(soil)
+    soil.sort()
+    for i, s in enumerate(soil):
+        if s.start == 41218238:
+            print(f"{s.start}, {s.range}, {s.end}")
+
+    print("soil")
+    fertilizer = map(soil.copy(), m.mapping_dict["to_fertilizer"])
+    print("fert")
+    water = map(fertilizer.copy(), m.mapping_dict["to_water"])
+    print("water")
+    light = map(water.copy(), m.mapping_dict["to_light"])
+    print("light")
+    temperature = map(light.copy(), m.mapping_dict["to_temperature"])
+    print("temp")
+    humidity = map(temperature.copy(), m.mapping_dict["to_humidity"])
+    print("hum")
+    location = map(humidity.copy(), m.mapping_dict["to_location"])
+    print("loc")
 
     for x in location:
         if result > x.start:

@@ -226,12 +226,6 @@ def part2():
     while area.next():
         pass
 
-    coords = []
-    for y in area.matrix:
-        for x in y:
-            if x.is_part_of_loop:
-                coords.append((x.x, x.y))
-
     poly = Polygon(area.coords)
 
     total = 0
