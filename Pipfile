@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 regex = "*"
 shapely = "*"
+numpy = "*"
 
 [dev-packages]
 
