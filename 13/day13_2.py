@@ -67,7 +67,7 @@ def part2():
         original = brute_force(pattern)[0]
         total1 += original
 
-        tmp = None
+        tmp = 0
         for yi, y in enumerate(pattern):
             for xi, x in enumerate(y):
                 # Flip one symbol at a time
@@ -84,7 +84,7 @@ def part2():
                         # print("o", original)
                         tmp = i
                         break
-                if tmp is not None:
+                if tmp != 0:
                     break
 
                 # Flip back if no mirror
@@ -92,10 +92,9 @@ def part2():
                     pattern[yi][xi] = "#"
                 else:
                     pattern[yi][xi] = "."
-            if tmp is not None:
+            if tmp != 0:
                 break
-        if tmp is not None:
-            total2 += tmp
+        total2 += tmp
 
     print(f"Total 1: {total1}")
     print(f"Total 2: {total2}")
