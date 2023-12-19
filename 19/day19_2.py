@@ -88,3 +88,4 @@ if __name__ == "__main__":
     print(f"Total 2: {total2}")
     assert total2 == 167409079868000
     # Does work for the example, but doesn't work for the actual input. I am tired of debugging this garbage
+    # Fucked up the parsing in the first place ... Different and working approach in 19_2_2.py
