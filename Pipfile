@@ -8,6 +8,7 @@ regex = "*"
 shapely = "*"
 numpy = "*"
 matplotlib = "*"
+z3-solver = "*"
 
 [dev-packages]
 
