@@ -9,6 +9,7 @@ shapely = "*"
 numpy = "*"
 matplotlib = "*"
 z3-solver = "*"
+networkx = "*"
 
 [dev-packages]
 

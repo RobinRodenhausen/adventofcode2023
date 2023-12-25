@@ -83,11 +83,11 @@ def part2():
     for hi, hailstorm in enumerate(hailstorms[:3]):
         ti = z3.Real(f"t{hi}")
         z3_solver.add(ti > 0)
-        z3_solver.add(px_real + ti * vx_real == hailstorm.px + ti * hailstorm.vx)
-        z3_solver.add(py_real + ti * vy_real == hailstorm.py + ti * hailstorm.vy)
-        z3_solver.add(pz_real + ti * vz_real == hailstorm.pz + ti * hailstorm.vz)
+        z3_solver.add(px_real + ti * vx_real == hailstorm.px + ti * hailstorm.vx)  # pyright: ignore[reportGeneralTypeIssues]
+        z3_solver.add(py_real + ti * vy_real == hailstorm.py + ti * hailstorm.vy)  # pyright: ignore[reportGeneralTypeIssues]
+        z3_solver.add(pz_real + ti * vz_real == hailstorm.pz + ti * hailstorm.vz)  # pyright: ignore[reportGeneralTypeIssues]
     z3_solver.check()
-    total = sum(z3_solver.model()[var].as_long() for var in [px_real, py_real, pz_real])
+    total = sum(z3_solver.model()[var].as_long() for var in [px_real, py_real, pz_real])  # pyright: ignore
     print(f"Total 2: {total}")
 
 
